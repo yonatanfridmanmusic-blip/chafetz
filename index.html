@@ -12,11 +12,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Playpen+Sans+Hebrew:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#FFF4D6;--ink:#2B3A1F;--leaf:#4E9A3E;--leaf2:#93D86A;--card:#FFFBEE;--pink:#FF9AA2}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Varela Round',system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Playpen Sans Hebrew',system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
   body{background:radial-gradient(circle at 20% 15%,#FFFDF5 0 18%,transparent 19%),radial-gradient(circle at 85% 80%,#FFEDBF 0 14%,transparent 15%),var(--bg)}
   main{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
   .btn{position:relative;width:min(74vw,320px);aspect-ratio:1;border-radius:50%;border:0;padding:0;cursor:pointer;
@@ -25,7 +25,7 @@
     transition:transform .12s cubic-bezier(.3,1.6,.5,1),box-shadow .12s;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .btn:active,.btn.down{transform:translateY(10px) scale(.97);box-shadow:0 4px 0 #E6CF8E,0 8px 18px rgba(120,90,20,.25)}
   .btn img{width:68%;margin-top:-6%;pointer-events:none;animation:bob 3s ease-in-out infinite}
-  .btn span{font-size:clamp(34px,11vw,48px);margin-top:-4%;color:var(--leaf);letter-spacing:.5px;text-shadow:0 2px 0 #fff}
+  .btn span{font-family:'Rubik Doodle Shadow',system-ui;font-size:clamp(44px,14vw,62px);line-height:1;margin-top:-2%;color:var(--leaf)}
   .btn.wiggle img{animation:wig .5s ease}
   @keyframes bob{50%{transform:translateY(-6px) rotate(-2deg)}}
   @keyframes wig{20%{transform:rotate(-12deg) scale(1.08)}50%{transform:rotate(10deg) scale(1.1)}80%{transform:rotate(-4deg)}}
@@ -34,7 +34,7 @@
   .panel{width:min(100%,360px);background:var(--card);border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 #EFDDA6;text-align:center;font-size:16px;line-height:1.5}
   .panel b{color:var(--leaf)}
   .row{display:flex;gap:8px;margin-top:10px}
-  input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border-radius:14px;border:2px solid #E9D9A4;background:#fff;color:var(--ink);text-align:center}
+  input{font-family:inherit;flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border-radius:14px;border:2px solid #E9D9A4;background:#fff;color:var(--ink);text-align:center}
   .pill{font:inherit;font-size:16px;border:0;border-radius:14px;padding:10px 16px;background:var(--leaf);color:#fff;box-shadow:0 4px 0 #3E8231;cursor:pointer}
   .pill:active{transform:translateY(3px);box-shadow:0 1px 0 #3E8231}
   .muted{opacity:.65;font-size:14px}
