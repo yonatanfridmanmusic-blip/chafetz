@@ -41,6 +41,14 @@
   .hidden{display:none}
   .toast{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 24px);left:50%;transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:15px;transition:.25s;z-index:9}
   .toast.on{transform:translate(-50%,0);opacity:1}
+  .approve{width:min(100%,360px);background:#4E9A3E;color:#fff;border-radius:22px;padding:14px 16px;text-align:center;box-shadow:0 6px 0 #3E8231;animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+  .approve .who{font-size:17px;margin-bottom:10px}
+  .approve button{font-family:'Rubik Doodle Shadow',system-ui;font-size:30px;width:100%;border:0;border-radius:16px;padding:10px;background:#FFF4D6;color:#3E8231;box-shadow:0 5px 0 #E6CF8E;cursor:pointer}
+  .approve button:active{transform:translateY(4px);box-shadow:0 1px 0 #E6CF8E}
+  @keyframes pop{from{transform:scale(.6);opacity:0}}
+  .hurray{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;pointer-events:none}
+  .hurray div{font-family:'Rubik Doodle Shadow',system-ui;font-size:clamp(56px,20vw,110px);color:#4E9A3E;animation:hurray 2.2s cubic-bezier(.3,1.6,.5,1) forwards}
+  @keyframes hurray{0%{transform:scale(.2) rotate(-20deg);opacity:0}15%{transform:scale(1.15) rotate(6deg);opacity:1}30%{transform:scale(1) rotate(-3deg)}80%{opacity:1}100%{transform:scale(1.4);opacity:0}}
 </style>
 </head>
 <body>
@@ -49,6 +57,11 @@
     <img src="lettuce.svg" alt="">
     <span>חפץ?</span>
   </button>
+
+  <div class="approve hidden" id="approve">
+    <div class="who" id="approveWho">מישהו שאל: חפץ?</div>
+    <button id="approveBtn">מאשר חפץ ✅</button>
+  </div>
 
   <div class="panel hidden" id="ios">
     כדי לקבל התראות באייפון:<br>
@@ -125,6 +138,71 @@ $('btn').onclick = async (ev) => {
     toast(res.sent ? 'חפץ? נשלח 🥬' : 'אין עדיין למי לשלוח 🥲');
   } catch { toast('אין חיבור 🥲'); }
 };
+
+let audio = null;
+function unlockAudio(){ try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch {} }
+document.addEventListener('pointerdown', unlockAudio, { passive: true });
+
+function hurraySound(){
+  unlockAudio(); if (!audio) return;
+  const t0 = audio.currentTime + .05, out = audio.createGain();
+  out.gain.value = .35; out.connect(audio.destination);
+  const note = (f, t, d, type='square', v=.5) => {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0+t);
+    g.gain.setValueAtTime(0, t0+t); g.gain.linearRampToValueAtTime(v, t0+t+.01); g.gain.exponentialRampToValueAtTime(.001, t0+t+d);
+    o.connect(g); g.connect(out); o.start(t0+t); o.stop(t0+t+d+.05);
+  };
+  [523,659,784,1047].forEach((f,i)=>note(f, i*.09, .14));
+  note(784,.40,.12); note(1047,.52,.5,'square',.55); note(1319,.52,.5,'triangle',.4);
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(330, t0+1.05); o.frequency.exponentialRampToValueAtTime(880, t0+1.45);
+  g.gain.setValueAtTime(0, t0+1.05); g.gain.linearRampToValueAtTime(.35, t0+1.1); g.gain.exponentialRampToValueAtTime(.001, t0+1.7);
+  o.connect(g); g.connect(out); o.start(t0+1.05); o.stop(t0+1.75);
+}
+
+let lastParty = 0;
+function celebrate(title){
+  if (Date.now() - lastParty < 4000) return; lastParty = Date.now();
+  hurraySound();
+  if (navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
+  const h = document.createElement('div'); h.className = 'hurray'; h.innerHTML = '<div>הורייי!</div>';
+  document.body.appendChild(h); setTimeout(() => h.remove(), 2300);
+  for (let i = 0; i < 14; i++) {
+    const f = document.createElement('img'); f.src = 'lettuce.svg'; f.className = 'fly';
+    f.style.left = Math.random()*innerWidth - 28 + 'px'; f.style.top = innerHeight - 40 + 'px';
+    f.style.setProperty('--dx', (Math.random()*160-80) + 'px'); f.style.setProperty('--r', (Math.random()*720-360) + 'deg');
+    f.style.animationDelay = i*50 + 'ms'; document.body.appendChild(f); setTimeout(() => f.remove(), 2000);
+  }
+  if (title) toast(title);
+}
+
+let approveTo = null;
+function showApprove(from, title){
+  approveTo = from;
+  $('approveWho').textContent = (title ? title.replace(' 🥬','') + ' שואל: ' : 'שאלו אותך: ') + 'חפץ?';
+  $('approve').classList.remove('hidden');
+}
+$('approveBtn').onclick = async () => {
+  if (!approveTo) return;
+  $('approve').classList.add('hidden');
+  try {
+    const res = await api({ action: 'approve', to: approveTo, endpoint, name: store.get('name') || '' });
+    toast(res.ok ? 'החפץ אושר ✅' : 'לא הצלחתי לשלוח 🥲');
+  } catch { toast('אין חיבור 🥲'); }
+  approveTo = null;
+};
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'hurray') celebrate(d.title);
+  if (d.type === 'chafetz' && d.from) showApprove(d.from, d.title);
+});
+
+const qs = new URLSearchParams(location.search);
+if (qs.get('approve')) showApprove(qs.get('approve'));
+if (qs.get('hurray')) setTimeout(() => celebrate(), 300);
+if (location.search) history.replaceState(null, '', location.pathname);
 
 init();
 </script>
