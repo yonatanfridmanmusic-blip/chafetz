@@ -18,7 +18,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Playpen Sans Hebrew',system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
   body{background:radial-gradient(circle at 20% 15%,#FFFDF5 0 18%,transparent 19%),radial-gradient(circle at 85% 80%,#FFEDBF 0 14%,transparent 15%),var(--bg)}
-  main{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  main{height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:22px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
   .btn{position:relative;width:min(74vw,320px);aspect-ratio:1;border-radius:50%;border:0;padding:0;cursor:pointer;
     background:radial-gradient(circle at 50% 35%,#fff 0,#FFFBEE 60%,#F6EBC8 100%);
     box-shadow:0 14px 0 #E6CF8E,0 22px 40px rgba(120,90,20,.25),inset 0 -6px 0 rgba(0,0,0,.04);
@@ -59,14 +59,33 @@
   .hurray{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;pointer-events:none}
   .hurray div{font-family:'Rubik Doodle Shadow',system-ui;font-size:clamp(56px,20vw,110px);color:#4E9A3E;animation:hurray 2.2s cubic-bezier(.3,1.6,.5,1) forwards}
   @keyframes hurray{0%{transform:scale(.2) rotate(-20deg);opacity:0}15%{transform:scale(1.15) rotate(6deg);opacity:1}30%{transform:scale(1) rotate(-3deg)}80%{opacity:1}100%{transform:scale(1.4);opacity:0}}
+  .chips{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:4px 2px 8px;scrollbar-width:none;flex-shrink:0}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex-shrink:0;font:inherit;font-size:15px;border:0;border-radius:999px;padding:8px 16px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 #EFDDA6;cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--leaf);color:#fff;box-shadow:0 3px 0 #3E8231}
+  .chip.add{background:transparent;box-shadow:none;border:2px dashed #D9C27F;color:#8A7433}
+  .ginfo{text-align:center;font-size:14px;line-height:1.6;max-width:360px;flex-shrink:0}
+  .ginfo .members{opacity:.7}
+  .link{font:inherit;font-size:14px;background:none;border:0;color:var(--leaf);text-decoration:underline;cursor:pointer;padding:2px 6px}
+  .link.red{color:#B23B3B}
+  .btn{flex-shrink:0}
+  .sheet h3{margin:4px 0 2px;font-size:17px;font-weight:700}
+  .sheet hr{border:0;border-top:2px dashed #EFDDA6;margin:14px 0}
+  .code{font-family:ui-monospace,monospace;font-size:26px;letter-spacing:2px;direction:ltr;user-select:all;-webkit-user-select:all;background:#fff;border-radius:12px;padding:8px;margin:8px 0;border:2px solid #E9D9A4}
+  .pill.ghost{background:#fff;color:var(--leaf);box-shadow:0 4px 0 #E9D9A4}
+  .x{float:left;font:inherit;font-size:20px;background:none;border:0;cursor:pointer;color:var(--ink);opacity:.5;line-height:1}
 </style>
 </head>
 <body>
 <main>
+  <div class="chips hidden" id="chips"></div>
+
   <button class="btn" id="btn" aria-label="חפץ?">
     <img src="lettuce.svg" alt="">
     <span>חפץ?</span>
   </button>
+
+  <div class="ginfo hidden" id="ginfo"></div>
 
   <div class="approve hidden" id="approve">
     <div class="who" id="approveWho">מישהו שאל: חפץ?</div>
@@ -79,9 +98,49 @@
     </div>
   </div>
 
+  <div class="panel sheet hidden" id="invite">
+    <button class="x" data-close="invite" aria-label="סגור">×</button>
+    <h3 id="inviteTitle">הזמנה לחבורה</h3>
+    <div>שולחים את הלינק למי שרוצים בחבורה</div>
+    <div class="code" id="inviteCode"></div>
+    <div class="row">
+      <button class="pill" id="shareInvite">שתף לינק</button>
+      <button class="pill ghost" id="copyInvite">העתק</button>
+    </div>
+    <div class="muted" style="margin-top:10px">באייפון אחרי ההתקנה מזינים את הקוד ב"+ חבורה"</div>
+  </div>
+
+  <div class="panel sheet hidden" id="sheet">
+    <button class="x" data-close="sheet" aria-label="סגור">×</button>
+    <h3>חבורה חדשה</h3>
+    <div class="row">
+      <input id="newGroup" maxlength="24" placeholder="שם, למשל: אחים">
+      <button class="pill" id="createGroup">צור</button>
+    </div>
+    <hr>
+    <h3>קיבלת קוד או לינק?</h3>
+    <div class="row">
+      <input id="joinCode" maxlength="80" placeholder="מדביקים כאן" dir="ltr">
+      <button class="pill" id="joinGroup">הצטרף</button>
+    </div>
+    <hr>
+    <h3>השם שלך</h3>
+    <div class="row">
+      <input id="myName" maxlength="20" placeholder="השם שיופיע בהתראה">
+      <button class="pill ghost" id="saveName">שמור</button>
+    </div>
+  </div>
+
   <div class="panel hidden" id="ios">
     כדי לקבל התראות באייפון:<br>
     לוחצים על <b>שיתוף</b> ⬆️ ואז <b>הוסף למסך הבית</b>,<br>ופותחים את האפליקציה משם 🥬
+    <div id="iosJoin" class="hidden">
+      <hr style="border:0;border-top:2px dashed #EFDDA6;margin:12px 0">
+      הוזמנת לחבורה! הקוד שלך:
+      <div class="code" id="iosCode"></div>
+      <button class="pill ghost" id="copyIosCode">העתק קוד</button>
+      <div class="muted" style="margin-top:8px">באפליקציה: "+ חבורה" ← מדביקים את הקוד</div>
+    </div>
   </div>
 
   <div class="panel hidden" id="setup">
@@ -95,34 +154,157 @@
   <div class="muted hidden" id="status"></div>
 </main>
 <div class="toast" id="toast"></div>
-
 <script>
 const API = "https://vndqjbatptgircjgsvdu.supabase.co/functions/v1/chafetz";
-const CODE = "FKdfq-eUVam0";
 const $ = id => document.getElementById(id);
-const store = { get(k){try{return localStorage.getItem(k)}catch{return null}}, set(k,v){try{localStorage.setItem(k,v)}catch{}} };
+const store = { get(k){try{return localStorage.getItem(k)}catch{return null}}, set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}} };
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-let endpoint = null;
+const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
+let endpoint = null, groups = [], current = store.get('group');
 
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),1800)}
-async function api(body){const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:CODE,...body})});return r.json()}
+const ERR = { bad_invite: 'הקוד לא נכון 🤔', group_full: 'החבורה מלאה', too_many_groups: 'יותר מדי חבורות', slow_down: 'רגע, תן לחסה לנשום 🥬', no_group: 'צריך קודם חבורה', not_in_group: 'הוא כבר לא בחבורה', not_registered: 'צריך להפעיל התראות מחדש' };
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2000)}
+async function api(body){const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({endpoint,...body})});return r.json()}
 function b64(u){const p='='.repeat((4-u.length%4)%4);const s=atob((u+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(s,c=>c.charCodeAt(0))}
+const inviteLink = g => location.origin + location.pathname + '?join=' + g.invite;
+const curGroup = () => groups.find(g => g.id === current);
+
+const qs = new URLSearchParams(location.search);
+if (qs.get('join')) store.set('pendingJoin', qs.get('join'));
+
+function render(){
+  if (!endpoint) { show('chips', false); show('ginfo', false); return; }
+  if (!curGroup()) current = groups[0]?.id || null;
+  store.set('group', current);
+  const chips = $('chips'); chips.innerHTML = '';
+  groups.forEach(g => {
+    const c = document.createElement('button'); c.className = 'chip' + (g.id === current ? ' on' : '');
+    c.textContent = g.name; c.onclick = () => { current = g.id; render(); };
+    chips.appendChild(c);
+  });
+  const add = document.createElement('button'); add.className = 'chip add'; add.textContent = '+ חבורה';
+  add.onclick = openSheet; chips.appendChild(add);
+  show('chips', true);
+  const g = curGroup(), gi = $('ginfo');
+  gi.innerHTML = '';
+  if (!g) {
+    gi.innerHTML = '<div>עוד אין לך חבורה 🥬</div>';
+    const b = document.createElement('button'); b.className = 'link'; b.textContent = 'צור חבורה או הצטרף עם קוד'; b.onclick = openSheet; gi.appendChild(b);
+  } else {
+    const m = document.createElement('div'); m.className = 'members';
+    m.textContent = g.members.map(x => x.me ? 'אני' : (x.name || 'בלי שם')).join(' · ');
+    gi.appendChild(m);
+    const inv = document.createElement('button'); inv.className = 'link'; inv.textContent = 'הזמן לחבורה'; inv.onclick = () => openInvite(g);
+    const lv = document.createElement('button'); lv.className = 'link red'; lv.textContent = 'יציאה'; lv.onclick = () => leave(g);
+    gi.append(inv, lv);
+  }
+  show('ginfo', true);
+  const active = chips.querySelector('.on'); if (active) active.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+async function loadMe(){
+  const res = await api({ action: 'me' });
+  if (res.error === 'not_registered') { endpoint = null; show('setup', true); return; }
+  if (!res.ok) return;
+  groups = res.groups;
+  if (res.name) store.set('name', res.name);
+  render();
+}
+
+async function tryPendingJoin(){
+  const code = store.get('pendingJoin'); if (!code || !endpoint) return;
+  store.set('pendingJoin', null);
+  await join(code);
+}
+
+async function join(code){
+  try {
+    const res = await api({ action: 'join', invite: code.trim() });
+    if (!res.ok) { toast(ERR[res.error] || 'לא הצלחתי להצטרף'); return false; }
+    current = res.group.id;
+    toast(res.already ? `אתה כבר ב${res.group.name}` : `הצטרפת ל${res.group.name} 🥬`);
+    await loadMe(); return true;
+  } catch { toast('אין חיבור 🥲'); return false; }
+}
+
+async function leave(g){
+  if (!confirmLeave(g)) return;
+  await api({ action: 'leave', group: g.id });
+  if (current === g.id) current = null;
+  toast(`יצאת מ${g.name}`); loadMe();
+}
+let leaveArmed = null;
+function confirmLeave(g){
+  if (leaveArmed === g.id) { leaveArmed = null; return true; }
+  leaveArmed = g.id; toast('לחץ שוב על יציאה כדי לאשר'); setTimeout(() => { if (leaveArmed === g.id) leaveArmed = null; }, 3000);
+  return false;
+}
+
+function openSheet(){ $('myName').value = store.get('name') || ''; show('invite', false); show('sheet', true); $('sheet').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+function openInvite(g){
+  $('inviteTitle').textContent = 'הזמנה ל' + g.name;
+  $('inviteCode').textContent = g.invite;
+  $('shareInvite').onclick = async () => {
+    const text = `בוא לחבורה "${g.name}" בחפץ? 🥬\n${inviteLink(g)}\nבאייפון, אחרי ההתקנה מזינים את הקוד: ${g.invite}`;
+    if (navigator.share) { try { await navigator.share({ text }); } catch {} }
+    else copy(text);
+  };
+  $('copyInvite').onclick = () => copy(inviteLink(g));
+  show('sheet', false); show('invite', true);
+  $('invite').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function copy(t){ try { await navigator.clipboard.writeText(t); toast('הועתק 📋'); } catch { toast('לא הצלחתי להעתיק'); } }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => show(b.dataset.close, false));
+
+$('createGroup').onclick = async () => {
+  const name = $('newGroup').value.trim();
+  if (!name) { toast('תן שם לחבורה'); return; }
+  const res = await api({ action: 'create', name });
+  if (!res.ok) { toast(ERR[res.error] || 'לא הצלחתי ליצור'); return; }
+  $('newGroup').value = ''; current = res.group.id;
+  await loadMe(); openInvite(curGroup() || res.group);
+};
+$('joinGroup').onclick = async () => {
+  const code = $('joinCode').value.trim();
+  if (!code) { toast('תדביק קוד או לינק'); return; }
+  if (await join(code)) { $('joinCode').value = ''; show('sheet', false); }
+};
+$('saveName').onclick = async () => {
+  const name = $('myName').value.trim();
+  if (!name) { toast('צריך שם'); return; }
+  const res = await api({ action: 'rename', name });
+  if (res.ok) { store.set('name', name); toast('נשמר ✅'); loadMe(); }
+};
+
+async function register(sub, name){
+  const res = await api({ action: 'subscribe', name, subscription: sub.toJSON(), oldEndpoint: store.get('ep') || '' });
+  if (!res.ok) throw new Error(res.error);
+  endpoint = sub.endpoint; store.set('ep', endpoint);
+}
 
 async function init(){
   $('name').value = store.get('name') || '';
-  if (isIOS && !standalone) { $('ios').classList.remove('hidden'); return; }
+  if (isIOS && !standalone) {
+    show('ios', true);
+    const code = store.get('pendingJoin');
+    if (code) { $('iosCode').textContent = code; show('iosJoin', true); $('copyIosCode').onclick = () => copy(code); }
+    return;
+  }
   if (!pushOK) { status('הדפדפן הזה לא תומך בהתראות'); return; }
   const reg = await navigator.serviceWorker.register('sw.js');
   const sub = await reg.pushManager.getSubscription();
-  if (sub && Notification.permission === 'granted') { endpoint = sub.endpoint; status('התראות פעילות 🥬'); }
-  else $('setup').classList.remove('hidden');
+  if (sub && Notification.permission === 'granted') {
+    try { await register(sub, store.get('name') || ''); } catch { endpoint = sub.endpoint; }
+    await loadMe(); await tryPendingJoin();
+  } else show('setup', true);
 }
 function status(t){const s=$('status');s.textContent=t;s.classList.remove('hidden')}
 
 $('enable').onclick = async () => {
   const name = $('name').value.trim();
+  if (!name) { toast('קודם שם 🙂'); return; }
   store.set('name', name);
   try {
     const perm = await Notification.requestPermission();
@@ -130,12 +312,10 @@ $('enable').onclick = async () => {
     const reg = await navigator.serviceWorker.ready;
     const { key } = await api({ action: 'vapid' });
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
-    const res = await api({ action: 'subscribe', name, subscription: sub.toJSON() });
-    if (!res.ok) throw new Error(res.error);
-    endpoint = sub.endpoint;
-    $('setup').classList.add('hidden');
-    status('התראות פעילות 🥬');
-    toast('מוכן! עכשיו תלחץ על החסה');
+    await register(sub, name);
+    show('setup', false);
+    await loadMe(); await tryPendingJoin();
+    if (!groups.length) openSheet(); else toast('מוכן! עכשיו תלחץ על החסה');
   } catch (e) { toast('משהו נתקע: ' + e.message); }
 };
 
@@ -148,10 +328,13 @@ $('btn').onclick = async (ev) => {
     f.style.setProperty('--dx', (Math.random()*200-100) + 'px'); f.style.setProperty('--r', (Math.random()*720-360) + 'deg');
     f.style.animationDelay = i*60 + 'ms'; document.body.appendChild(f); setTimeout(() => f.remove(), 1500);
   }
+  if (!endpoint) { toast(isIOS && !standalone ? 'קודם מוסיפים למסך הבית 👇' : 'קודם מפעילים התראות 👇'); return; }
+  if (!curGroup()) { openSheet(); return; }
   try {
-    const res = await api({ action: 'press', endpoint, name: store.get('name') || '' });
+    const res = await api({ action: 'press', group: current });
     if (res.throttled) return;
-    toast(res.sent ? 'חפץ? נשלח 🥬' : 'אין עדיין למי לשלוח 🥲');
+    if (!res.ok) { toast(ERR[res.error] || 'משהו נתקע'); return; }
+    toast(res.sent ? `חפץ? נשלח ל${curGroup().name} 🥬` : 'אין עדיין אף אחד בחבורה - תזמין מישהו');
   } catch { toast('אין חיבור 🥲'); }
 };
 
@@ -222,19 +405,21 @@ function sad(title){
   if (title) toast(title);
 }
 
-let approveTo = null;
-function showApprove(from, who){
-  approveTo = from;
-  $('approveWho').textContent = (who ? who + ' שואל: ' : 'שאלו אותך: ') + 'חפץ?';
-  $('approve').classList.remove('hidden');
+let approveTo = null, approveGroup = null;
+function showApprove(from, who, group, groupName){
+  approveTo = from; approveGroup = group || null;
+  const where = groupName && groups.length > 1 ? ` (${groupName})` : '';
+  $('approveWho').textContent = (who ? who + ' שואל' : 'שאלו אותך') + where + ': חפץ?';
+  show('approve', true);
+  $('approve').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 document.querySelectorAll('#approve [data-r]').forEach(b => b.onclick = async () => {
   if (!approveTo) return;
   const idx = Number(b.dataset.r);
-  $('approve').classList.add('hidden');
+  show('approve', false);
   try {
-    const res = await api({ action: 'reply', reply: idx, to: approveTo, endpoint, name: store.get('name') || '' });
-    toast(res.ok ? (idx === 4 ? 'נשלח: אין אותי 🙅' : 'נשלח ✅') : 'לא הצלחתי לשלוח 🥲');
+    const res = await api({ action: 'reply', reply: idx, to: approveTo, group: approveGroup || '' });
+    toast(res.ok ? (idx === 4 ? 'נשלח: אין אותי 🙅' : 'נשלח ✅') : (ERR[res.error] || 'לא הצלחתי לשלוח 🥲'));
   } catch { toast('אין חיבור 🥲'); }
   approveTo = null;
 });
@@ -243,11 +428,11 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
   const d = e.data || {};
   if (d.type === 'hurray') celebrate(d.title);
   if (d.type === 'nope') sad(d.title);
-  if (d.type === 'chafetz' && d.from) showApprove(d.from, d.name || (d.title || '').replace(' 🥬',''));
+  if (d.type === 'joined') { toast(d.title); loadMe(); }
+  if (d.type === 'chafetz' && d.from) showApprove(d.from, d.name || (d.title || '').replace(' 🥬',''), d.group, d.groupName);
 });
 
-const qs = new URLSearchParams(location.search);
-if (qs.get('approve')) showApprove(qs.get('approve'), qs.get('n') || '');
+if (qs.get('approve')) showApprove(qs.get('approve'), qs.get('n') || '', qs.get('g') || '', qs.get('gn') || '');
 if (qs.get('nope')) setTimeout(() => sad(), 300);
 if (qs.get('hurray')) setTimeout(() => celebrate(), 300);
 if (location.search) history.replaceState(null, '', location.pathname);
