@@ -26,7 +26,7 @@ self.addEventListener('push', e => {
   if (d.type === 'chafetz') {
     opts.image = 'lettuce.png';
     opts.vibrate = [80, 40, 80];
-    if (d.from) opts.actions = [{ action: 'r1', title: 'גלגל אני בא 🛞' }, { action: 'r4', title: 'אין אותי 🙅' }];
+    if (d.from) opts.actions = [{ action: 'r1', title: 'גלגל אני בא ✌🏼' }, { action: 'r4', title: 'אין אותי 🙅' }];
   } else if (d.type === 'hurray') {
     opts.vibrate = [100, 50, 100, 50, 300];
   } else if (d.type === 'nope') {
