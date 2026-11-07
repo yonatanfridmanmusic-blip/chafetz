@@ -71,7 +71,10 @@
   .btn{flex-shrink:0}
   .sheet h3{margin:4px 0 2px;font-size:17px;font-weight:700}
   .sheet hr{border:0;border-top:2px dashed #EFDDA6;margin:14px 0}
-  .code{font-family:ui-monospace,monospace;font-size:34px;letter-spacing:6px;direction:ltr;user-select:all;-webkit-user-select:all;background:#fff;border-radius:12px;padding:8px;margin:8px 0;border:2px solid #E9D9A4}
+  .bigcode{width:100%;flex:none;font-family:ui-monospace,monospace;font-size:38px;letter-spacing:8px;padding:12px 8px;border-width:3px;border-color:var(--leaf)}
+  .bigcode::placeholder{color:#D9CFA8}
+  .ginfo .gcode{font-family:ui-monospace,monospace;font-size:18px;letter-spacing:3px;direction:ltr;display:inline-block}
+  .code{font-family:ui-monospace,monospace;font-size:38px;letter-spacing:6px;direction:ltr;user-select:all;-webkit-user-select:all;background:#fff;border-radius:12px;padding:8px;margin:8px 0;border:2px solid #E9D9A4}
   .pill.ghost{background:#fff;color:var(--leaf);box-shadow:0 4px 0 #E9D9A4}
   .x{float:left;font:inherit;font-size:20px;background:none;border:0;cursor:pointer;color:var(--ink);opacity:.5;line-height:1}
 </style>
@@ -101,27 +104,25 @@
   <div class="panel sheet hidden" id="invite">
     <button class="x" data-close="invite" aria-label="סגור">×</button>
     <h3 id="inviteTitle">הזמנה לחבורה</h3>
-    <div>הקוד של החבורה - שולחים אותו או את הלינק</div>
+    <div>זה הקוד. שולחים או פשוט אומרים אותו</div>
     <div class="code" id="inviteCode"></div>
     <div class="row">
       <button class="pill" id="shareInvite">שתף לינק</button>
       <button class="pill ghost" id="copyInvite">העתק קוד</button>
     </div>
-    <div class="muted" style="margin-top:10px">מצטרפים דרך "+ חבורה" ← מקלידים את הקוד</div>
+    <div class="muted" style="margin-top:10px">החבר לוחץ "+ חבורה" ומקליד את 6 הספרות</div>
   </div>
 
   <div class="panel sheet hidden" id="sheet">
     <button class="x" data-close="sheet" aria-label="סגור">×</button>
-    <h3>חבורה חדשה</h3>
+    <h3 style="font-size:22px">יש לך קוד? 🔢</h3>
+    <div class="muted" style="margin-bottom:6px">מקלידים 6 ספרות ונכנסים</div>
+    <input id="joinCode" class="bigcode" inputmode="numeric" pattern="[0-9]*" maxlength="7" placeholder="000 000" dir="ltr" autocomplete="one-time-code" aria-label="קוד חבורה">
+    <hr>
+    <h3>או פותחים חבורה חדשה</h3>
     <div class="row">
       <input id="newGroup" maxlength="24" placeholder="שם, למשל: אחים">
       <button class="pill" id="createGroup">צור</button>
-    </div>
-    <hr>
-    <h3>יש לך קוד?</h3>
-    <div class="row">
-      <input id="joinCode" maxlength="200" placeholder="למשל K7QM2P" dir="ltr" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:3px">
-      <button class="pill" id="joinGroup">הצטרף</button>
     </div>
     <hr>
     <h3>השם שלך</h3>
@@ -139,7 +140,7 @@
       הוזמנת לחבורה! הקוד שלך:
       <div class="code" id="iosCode"></div>
       <button class="pill ghost" id="copyIosCode">העתק קוד</button>
-      <div class="muted" style="margin-top:8px">באפליקציה: "+ חבורה" ← מקלידים את הקוד</div>
+      <div class="muted" style="margin-top:8px">באפליקציה מקלידים את 6 הספרות</div>
     </div>
   </div>
 
@@ -164,11 +165,12 @@ const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notif
 const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
 let endpoint = null, groups = [], current = store.get('group');
 
-const ERR = { bad_invite: 'הקוד לא נכון 🤔', group_full: 'החבורה מלאה', too_many_groups: 'יותר מדי חבורות', slow_down: 'רגע, תן לחסה לנשום 🥬', no_group: 'צריך קודם חבורה', not_in_group: 'הוא כבר לא בחבורה', not_registered: 'צריך להפעיל התראות מחדש', too_many_tries: 'יותר מדי ניסיונות, נסה שוב בעוד שעה' };
+const ERR = { bad_invite: 'אין חבורה עם הקוד הזה 🤔', group_full: 'החבורה מלאה', too_many_groups: 'יותר מדי חבורות', slow_down: 'רגע, תן לחסה לנשום 🥬', no_group: 'צריך קודם חבורה', not_in_group: 'הוא כבר לא בחבורה', not_registered: 'צריך להפעיל התראות מחדש', too_many_tries: 'יותר מדי ניסיונות, נסה שוב בעוד שעה' };
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2000)}
 async function api(body){const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({endpoint,...body})});return r.json()}
 function b64(u){const p='='.repeat((4-u.length%4)%4);const s=atob((u+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(s,c=>c.charCodeAt(0))}
 const inviteLink = g => location.origin + location.pathname + '?join=' + g.invite;
+const fmt = c => String(c || '').replace(/^(\d{3})(\d{3})$/, '$1 $2');
 const curGroup = () => groups.find(g => g.id === current);
 
 const qs = new URLSearchParams(location.search);
@@ -196,7 +198,10 @@ function render(){
     const m = document.createElement('div'); m.className = 'members';
     m.textContent = g.members.map(x => x.me ? 'אני' : (x.name || 'בלי שם')).join(' · ');
     gi.appendChild(m);
-    const inv = document.createElement('button'); inv.className = 'link'; inv.textContent = 'הזמן לחבורה'; inv.onclick = () => openInvite(g);
+    const code = document.createElement('div');
+    code.innerHTML = 'קוד החבורה: <span class="gcode"></span>'; code.querySelector('.gcode').textContent = fmt(g.invite);
+    gi.appendChild(code);
+    const inv = document.createElement('button'); inv.className = 'link'; inv.textContent = 'שתף קוד'; inv.onclick = () => openInvite(g);
     const lv = document.createElement('button'); lv.className = 'link red'; lv.textContent = 'יציאה'; lv.onclick = () => leave(g);
     gi.append(inv, lv);
   }
@@ -242,12 +247,12 @@ function confirmLeave(g){
   return false;
 }
 
-function openSheet(){ $('myName').value = store.get('name') || ''; show('invite', false); show('sheet', true); $('sheet').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+function openSheet(){ $('myName').value = store.get('name') || ''; show('invite', false); show('sheet', true); $('sheet').scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('joinCode').focus(), 50); }
 function openInvite(g){
   $('inviteTitle').textContent = 'הזמנה ל' + g.name;
-  $('inviteCode').textContent = g.invite;
+  $('inviteCode').textContent = fmt(g.invite);
   $('shareInvite').onclick = async () => {
-    const text = `בוא לחבורה "${g.name}" בחפץ? 🥬\nהקוד: ${g.invite}\n${inviteLink(g)}`;
+    const text = `בוא לחבורה "${g.name}" בחפץ? 🥬\nהקוד: ${fmt(g.invite)}\n${inviteLink(g)}`;
     if (navigator.share) { try { await navigator.share({ text }); } catch {} }
     else copy(text);
   };
@@ -266,11 +271,18 @@ $('createGroup').onclick = async () => {
   $('newGroup').value = ''; current = res.group.id;
   await loadMe(); openInvite(curGroup() || res.group);
 };
-$('joinGroup').onclick = async () => {
-  const code = $('joinCode').value.trim();
-  if (!code) { toast('תדביק קוד או לינק'); return; }
-  if (await join(code)) { $('joinCode').value = ''; show('sheet', false); }
-};
+let joining = false;
+$('joinCode').addEventListener('input', async () => {
+  const el = $('joinCode');
+  const digits = el.value.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x660)).replace(/\D/g, '').slice(0, 6);
+  el.value = digits.length > 3 ? digits.slice(0, 3) + ' ' + digits.slice(3) : digits;
+  if (digits.length < 6 || joining) return;
+  joining = true; el.blur();
+  const ok = await join(digits);
+  joining = false;
+  if (ok) { el.value = ''; show('sheet', false); }
+  else { el.value = ''; el.focus(); }
+});
 $('saveName').onclick = async () => {
   const name = $('myName').value.trim();
   if (!name) { toast('צריך שם'); return; }
@@ -289,7 +301,7 @@ async function init(){
   if (isIOS && !standalone) {
     show('ios', true);
     const code = store.get('pendingJoin');
-    if (code) { $('iosCode').textContent = code; show('iosJoin', true); $('copyIosCode').onclick = () => copy(code); }
+    if (code) { $('iosCode').textContent = fmt(code); show('iosJoin', true); $('copyIosCode').onclick = () => copy(code); }
     return;
   }
   if (!pushOK) { status('הדפדפן הזה לא תומך בהתראות'); return; }
