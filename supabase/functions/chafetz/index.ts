@@ -23,8 +23,9 @@ const MAX_MEMBERS_PER_GROUP = 50;
 const PRESS_PER_MINUTE = 20;
 
 const clean = (v: unknown, n = 30) => String(v ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, n);
-function token(len = 10) {
-  const abc = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const JOIN_FAILS_PER_HOUR = 10;
+function token(len = 6) {
+  const abc = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const b = crypto.getRandomValues(new Uint8Array(len));
   return Array.from(b, (x) => abc[x % abc.length]).join("");
 }
@@ -52,7 +53,7 @@ async function send(t: { endpoint: string; sub: unknown }, payload: unknown) {
 async function device(endpoint: unknown) {
   const ep = String(endpoint ?? "");
   if (!ep) return null;
-  const [d] = await sql`select id, name, endpoint, last_press, win_start, win_count from chafetz.subs where endpoint = ${ep}`;
+  const [d] = await sql`select id, name, endpoint, last_press, win_start, win_count, jf_start, jf_count from chafetz.subs where endpoint = ${ep}`;
   return d ?? null;
 }
 
@@ -121,16 +122,26 @@ Deno.serve(async (req) => {
     const name = clean(body.name, 24) || "החבורה";
     const [{ n }] = await sql`select count(*)::int n from chafetz.members where device_id = ${me.id}`;
     if (n >= MAX_GROUPS_PER_DEVICE) return json({ error: "too_many_groups" }, 429);
-    const [g] = await sql`insert into chafetz.groups (name, invite, created_by) values (${name}, ${token()}, ${me.id}) returning id, name, invite`;
+    let g: any = null;
+    for (let i = 0; i < 5 && !g; i++) {
+      [g] = await sql`insert into chafetz.groups (name, invite, created_by) values (${name}, ${token()}, ${me.id}) on conflict (invite) do nothing returning id, name, invite`;
+    }
+    if (!g) return json({ error: "try_again" }, 500);
     await sql`insert into chafetz.members (group_id, device_id) values (${g.id}, ${me.id})`;
     return json({ ok: true, group: g });
   }
 
   if (a === "join") {
+    const jfWindow = me.jf_start && Date.now() - new Date(me.jf_start).getTime() < 3_600_000;
+    if (jfWindow && me.jf_count >= JOIN_FAILS_PER_HOUR) return json({ error: "too_many_tries" }, 429);
     const raw = String(body.invite ?? "").slice(0, 500);
-    const invite = (raw.match(/join=([A-Za-z0-9]{6,20})/) || raw.match(/(?<![A-Za-z0-9])([A-Za-z0-9]{6,20})(?![A-Za-z0-9])/) || [])[1] || "";
-    const [g] = await sql`select id, name, invite from chafetz.groups where invite = ${invite}`;
-    if (!g) return json({ error: "bad_invite" }, 404);
+    const invite = ((raw.match(/join=([A-Za-z0-9]{4,20})/) || raw.match(/(?<![A-Za-z0-9])([A-Za-z0-9]{6})(?![A-Za-z0-9])/) || [])[1] || "").toUpperCase();
+    const [g] = invite ? await sql`select id, name, invite from chafetz.groups where invite = ${invite}` : [];
+    if (!g) {
+      await sql`update chafetz.subs set jf_start = case when ${!!jfWindow} then jf_start else now() end,
+        jf_count = case when ${!!jfWindow} then jf_count + 1 else 1 end where id = ${me.id}`;
+      return json({ error: "bad_invite" }, 404);
+    }
     const [{ n }] = await sql`select count(*)::int n from chafetz.members where group_id = ${g.id}`;
     if (n >= MAX_MEMBERS_PER_GROUP) return json({ error: "group_full" }, 429);
     const [{ k }] = await sql`select count(*)::int k from chafetz.members where device_id = ${me.id}`;

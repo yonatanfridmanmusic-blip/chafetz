@@ -71,7 +71,7 @@
   .btn{flex-shrink:0}
   .sheet h3{margin:4px 0 2px;font-size:17px;font-weight:700}
   .sheet hr{border:0;border-top:2px dashed #EFDDA6;margin:14px 0}
-  .code{font-family:ui-monospace,monospace;font-size:26px;letter-spacing:2px;direction:ltr;user-select:all;-webkit-user-select:all;background:#fff;border-radius:12px;padding:8px;margin:8px 0;border:2px solid #E9D9A4}
+  .code{font-family:ui-monospace,monospace;font-size:34px;letter-spacing:6px;direction:ltr;user-select:all;-webkit-user-select:all;background:#fff;border-radius:12px;padding:8px;margin:8px 0;border:2px solid #E9D9A4}
   .pill.ghost{background:#fff;color:var(--leaf);box-shadow:0 4px 0 #E9D9A4}
   .x{float:left;font:inherit;font-size:20px;background:none;border:0;cursor:pointer;color:var(--ink);opacity:.5;line-height:1}
 </style>
@@ -101,13 +101,13 @@
   <div class="panel sheet hidden" id="invite">
     <button class="x" data-close="invite" aria-label="סגור">×</button>
     <h3 id="inviteTitle">הזמנה לחבורה</h3>
-    <div>שולחים את הלינק למי שרוצים בחבורה</div>
+    <div>הקוד של החבורה - שולחים אותו או את הלינק</div>
     <div class="code" id="inviteCode"></div>
     <div class="row">
       <button class="pill" id="shareInvite">שתף לינק</button>
-      <button class="pill ghost" id="copyInvite">העתק</button>
+      <button class="pill ghost" id="copyInvite">העתק קוד</button>
     </div>
-    <div class="muted" style="margin-top:10px">באייפון אחרי ההתקנה מזינים את הקוד ב"+ חבורה"</div>
+    <div class="muted" style="margin-top:10px">מצטרפים דרך "+ חבורה" ← מקלידים את הקוד</div>
   </div>
 
   <div class="panel sheet hidden" id="sheet">
@@ -118,9 +118,9 @@
       <button class="pill" id="createGroup">צור</button>
     </div>
     <hr>
-    <h3>קיבלת קוד או לינק?</h3>
+    <h3>יש לך קוד?</h3>
     <div class="row">
-      <input id="joinCode" maxlength="80" placeholder="מדביקים כאן" dir="ltr">
+      <input id="joinCode" maxlength="200" placeholder="למשל K7QM2P" dir="ltr" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:3px">
       <button class="pill" id="joinGroup">הצטרף</button>
     </div>
     <hr>
@@ -139,7 +139,7 @@
       הוזמנת לחבורה! הקוד שלך:
       <div class="code" id="iosCode"></div>
       <button class="pill ghost" id="copyIosCode">העתק קוד</button>
-      <div class="muted" style="margin-top:8px">באפליקציה: "+ חבורה" ← מדביקים את הקוד</div>
+      <div class="muted" style="margin-top:8px">באפליקציה: "+ חבורה" ← מקלידים את הקוד</div>
     </div>
   </div>
 
@@ -164,7 +164,7 @@ const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notif
 const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
 let endpoint = null, groups = [], current = store.get('group');
 
-const ERR = { bad_invite: 'הקוד לא נכון 🤔', group_full: 'החבורה מלאה', too_many_groups: 'יותר מדי חבורות', slow_down: 'רגע, תן לחסה לנשום 🥬', no_group: 'צריך קודם חבורה', not_in_group: 'הוא כבר לא בחבורה', not_registered: 'צריך להפעיל התראות מחדש' };
+const ERR = { bad_invite: 'הקוד לא נכון 🤔', group_full: 'החבורה מלאה', too_many_groups: 'יותר מדי חבורות', slow_down: 'רגע, תן לחסה לנשום 🥬', no_group: 'צריך קודם חבורה', not_in_group: 'הוא כבר לא בחבורה', not_registered: 'צריך להפעיל התראות מחדש', too_many_tries: 'יותר מדי ניסיונות, נסה שוב בעוד שעה' };
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2000)}
 async function api(body){const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({endpoint,...body})});return r.json()}
 function b64(u){const p='='.repeat((4-u.length%4)%4);const s=atob((u+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(s,c=>c.charCodeAt(0))}
@@ -247,11 +247,11 @@ function openInvite(g){
   $('inviteTitle').textContent = 'הזמנה ל' + g.name;
   $('inviteCode').textContent = g.invite;
   $('shareInvite').onclick = async () => {
-    const text = `בוא לחבורה "${g.name}" בחפץ? 🥬\n${inviteLink(g)}\nבאייפון, אחרי ההתקנה מזינים את הקוד: ${g.invite}`;
+    const text = `בוא לחבורה "${g.name}" בחפץ? 🥬\nהקוד: ${g.invite}\n${inviteLink(g)}`;
     if (navigator.share) { try { await navigator.share({ text }); } catch {} }
     else copy(text);
   };
-  $('copyInvite').onclick = () => copy(inviteLink(g));
+  $('copyInvite').onclick = () => copy(g.invite);
   show('sheet', false); show('invite', true);
   $('invite').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
