@@ -26,19 +26,21 @@ self.addEventListener('push', e => {
   if (d.type === 'chafetz') {
     opts.image = 'lettuce.png';
     opts.vibrate = [80, 40, 80];
-    if (d.from) opts.actions = [{ action: 'approve', title: 'מאשר חפץ ✅' }];
+    if (d.from) opts.actions = [{ action: 'r1', title: 'גלגל אני בא 🛞' }, { action: 'r4', title: 'אין אותי 🙅' }];
   } else if (d.type === 'hurray') {
     opts.vibrate = [100, 50, 100, 50, 300];
+  } else if (d.type === 'nope') {
+    opts.vibrate = [400];
   }
   e.waitUntil(Promise.all([self.registration.showNotification(d.title, opts), tellClients(d)]));
 });
 
-async function approve(to) {
+async function reply(to, idx) {
   const sub = await self.registration.pushManager.getSubscription();
   await fetch(API, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ code: CODE, action: 'approve', to, endpoint: sub ? sub.endpoint : '' })
+    body: JSON.stringify({ code: CODE, action: 'reply', reply: idx, to, endpoint: sub ? sub.endpoint : '' })
   });
 }
 
@@ -46,10 +48,11 @@ self.addEventListener('notificationclick', e => {
   const d = e.notification.data || {};
   e.notification.close();
   e.waitUntil((async () => {
-    if (e.action === 'approve' && d.from) return approve(d.from);
+    if (/^r\d$/.test(e.action) && d.from) return reply(d.from, Number(e.action.slice(1)));
     let q = '';
-    if (d.type === 'chafetz' && d.from) q = '?approve=' + encodeURIComponent(d.from);
+    if (d.type === 'chafetz' && d.from) q = '?approve=' + encodeURIComponent(d.from) + '&n=' + encodeURIComponent(d.name || '');
     if (d.type === 'hurray') q = '?hurray=1';
+    if (d.type === 'nope') q = '?nope=1';
     const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     if (all.length) {
       all[0].postMessage({ type: 'open', ...d });

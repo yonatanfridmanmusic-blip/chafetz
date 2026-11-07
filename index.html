@@ -43,8 +43,18 @@
   .toast.on{transform:translate(-50%,0);opacity:1}
   .approve{width:min(100%,360px);background:#4E9A3E;color:#fff;border-radius:22px;padding:14px 16px;text-align:center;box-shadow:0 6px 0 #3E8231;animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
   .approve .who{font-size:17px;margin-bottom:10px}
-  .approve button{font-family:'Rubik Doodle Shadow',system-ui;font-size:30px;width:100%;border:0;border-radius:16px;padding:10px;background:#FFF4D6;color:#3E8231;box-shadow:0 5px 0 #E6CF8E;cursor:pointer}
+  .approve .opts{display:flex;flex-direction:column;gap:9px}
+  .approve button{font-family:'Playpen Sans Hebrew',system-ui;font-weight:700;font-size:18px;width:100%;border:0;border-radius:16px;padding:11px;background:#FFF4D6;color:#3E8231;box-shadow:0 5px 0 #E6CF8E;cursor:pointer}
   .approve button:active{transform:translateY(4px);box-shadow:0 1px 0 #E6CF8E}
+  .approve button.no{background:#FFE3E3;color:#B23B3B;box-shadow:0 5px 0 #F2B8B8}
+  .approve button.no:active{box-shadow:0 1px 0 #F2B8B8}
+  .nope{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:8;pointer-events:none;background:rgba(225,232,240,.88);animation:fade 2.8s forwards}
+  .nope img{width:min(45vw,200px);animation:droop 2.8s ease forwards;filter:saturate(.4)}
+  .nope div{font-family:'Rubik Doodle Shadow',system-ui;font-size:clamp(44px,15vw,80px);color:#6B7A8F}
+  @keyframes droop{0%{transform:translateY(-40px) rotate(0)}30%{transform:translateY(0) rotate(-8deg)}60%{transform:translateY(10px) rotate(12deg) scaleY(.9)}100%{transform:translateY(30px) rotate(25deg) scaleY(.8)}}
+  @keyframes fade{0%,80%{opacity:1}100%{opacity:0}}
+  .drop{position:fixed;top:-20px;width:6px;height:14px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#7FB2E5;z-index:7;pointer-events:none;animation:drop 1s linear forwards}
+  @keyframes drop{to{transform:translateY(110vh)}}
   @keyframes pop{from{transform:scale(.6);opacity:0}}
   .hurray{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;pointer-events:none}
   .hurray div{font-family:'Rubik Doodle Shadow',system-ui;font-size:clamp(56px,20vw,110px);color:#4E9A3E;animation:hurray 2.2s cubic-bezier(.3,1.6,.5,1) forwards}
@@ -60,7 +70,13 @@
 
   <div class="approve hidden" id="approve">
     <div class="who" id="approveWho">מישהו שאל: חפץ?</div>
-    <button id="approveBtn">מאשר חפץ ✅</button>
+    <div class="opts">
+      <button data-r="0">חמש דקות אני מגיע ⏱️</button>
+      <button data-r="1">גלגל אני בא 🛞</button>
+      <button data-r="2">הלילה מנשקים כוכבים ✨</button>
+      <button data-r="3">קובי תהיה עדין 🤲</button>
+      <button data-r="4" class="no">אין אותי 🙅</button>
+    </div>
   </div>
 
   <div class="panel hidden" id="ios">
@@ -177,30 +193,62 @@ function celebrate(title){
   if (title) toast(title);
 }
 
+function sadSound(){
+  unlockAudio(); if (!audio) return;
+  const t0 = audio.currentTime + .05, out = audio.createGain();
+  out.gain.value = .3; out.connect(audio.destination);
+  [[392,0,.45],[370,.5,.45],[349,1,.45],[330,1.5,1.1]].forEach(([f,t,d],i) => {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t0+t);
+    if (i === 3) { const l = audio.createOscillator(), lg = audio.createGain(); l.frequency.value = 6; lg.gain.value = 8; l.connect(lg); lg.connect(o.frequency); l.start(t0+t); l.stop(t0+t+d); o.frequency.linearRampToValueAtTime(300, t0+t+d); }
+    g.gain.setValueAtTime(0, t0+t); g.gain.linearRampToValueAtTime(.5, t0+t+.04); g.gain.setValueAtTime(.5, t0+t+d-.1); g.gain.exponentialRampToValueAtTime(.001, t0+t+d);
+    o.connect(g); g.connect(out); o.start(t0+t); o.stop(t0+t+d+.05);
+  });
+}
+
+let lastSad = 0;
+function sad(title){
+  if (Date.now() - lastSad < 4000) return; lastSad = Date.now();
+  sadSound();
+  if (navigator.vibrate) navigator.vibrate(400);
+  const h = document.createElement('div'); h.className = 'nope'; h.innerHTML = '<img src="lettuce.svg" alt=""><div>אין אותו...</div>';
+  document.body.appendChild(h); setTimeout(() => h.remove(), 2900);
+  for (let i = 0; i < 30; i++) {
+    const d = document.createElement('div'); d.className = 'drop';
+    d.style.left = Math.random()*innerWidth + 'px'; d.style.animationDelay = Math.random()*1.6 + 's';
+    d.style.animationDuration = (.7 + Math.random()*.5) + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 3000);
+  }
+  if (title) toast(title);
+}
+
 let approveTo = null;
-function showApprove(from, title){
+function showApprove(from, who){
   approveTo = from;
-  $('approveWho').textContent = (title ? title.replace(' 🥬','') + ' שואל: ' : 'שאלו אותך: ') + 'חפץ?';
+  $('approveWho').textContent = (who ? who + ' שואל: ' : 'שאלו אותך: ') + 'חפץ?';
   $('approve').classList.remove('hidden');
 }
-$('approveBtn').onclick = async () => {
+document.querySelectorAll('#approve [data-r]').forEach(b => b.onclick = async () => {
   if (!approveTo) return;
+  const idx = Number(b.dataset.r);
   $('approve').classList.add('hidden');
   try {
-    const res = await api({ action: 'approve', to: approveTo, endpoint, name: store.get('name') || '' });
-    toast(res.ok ? 'החפץ אושר ✅' : 'לא הצלחתי לשלוח 🥲');
+    const res = await api({ action: 'reply', reply: idx, to: approveTo, endpoint, name: store.get('name') || '' });
+    toast(res.ok ? (idx === 4 ? 'נשלח: אין אותי 🙅' : 'נשלח ✅') : 'לא הצלחתי לשלוח 🥲');
   } catch { toast('אין חיבור 🥲'); }
   approveTo = null;
-};
+});
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
   const d = e.data || {};
   if (d.type === 'hurray') celebrate(d.title);
-  if (d.type === 'chafetz' && d.from) showApprove(d.from, d.title);
+  if (d.type === 'nope') sad(d.title);
+  if (d.type === 'chafetz' && d.from) showApprove(d.from, d.name || (d.title || '').replace(' 🥬',''));
 });
 
 const qs = new URLSearchParams(location.search);
-if (qs.get('approve')) showApprove(qs.get('approve'));
+if (qs.get('approve')) showApprove(qs.get('approve'), qs.get('n') || '');
+if (qs.get('nope')) setTimeout(() => sad(), 300);
 if (qs.get('hurray')) setTimeout(() => celebrate(), 300);
 if (location.search) history.replaceState(null, '', location.pathname);
 
